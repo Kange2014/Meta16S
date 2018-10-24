@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--java script for interacting with the RESTful API-->
+
+    <script type="text/javascript" src="/site_media/jquery/js/jquery-1.6.1.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/site_media/stylesheet.css" />
+
+    <link type="text/css" href="/site_media/jquery/css/aristo/jquery-ui-1.8.7.custom.css" rel="Stylesheet" />
+
+    <script type="text/javascript" src="/site_media/jquery/js/jquery-ui-1.8.13.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/site_media/report.css" media="screen" />
+
+    <!--page style-->
+
+    <style type='text/css'>
+
+        #formwrap {
+
+            line-height: 2em;
+
+            background: #eef;
+
+            margin: 10px;
+
+            padding: 10px;
+
+            height: 130px;
+
+        }
+
+        body {
+
+            font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana, Arial, Helvetica, sans-serif;
+
+            font-size: 12px;
+
+        }
+
+    </style>
+
+
+
+    <script type='text/javascript'>
+
+        //grab the global parameter value for genome_file via the RESTful API
+
+        pluginGET = "";
+
+
+
+        $(document).ready(function() {
+
+
+
+            $.ajaxSetup({
+
+                async: false
+
+            });
+
+            // get the reference for the current report - TS_result is defined in run verison of this script
+
+            var reportUrl = '/rundb/api/v1/results/' + TB_result + '/?format=json&noplugin=True';
+
+            var referenceID;
+
+            $.get(reportUrl, function(data) {
+
+                referenceID = data.reference;
+
+            });
+
+
+
+            $.ajax({
+
+
+
+                url: "/rundb/api/v1/referencegenome/?limit=0&enabled=true&index_version=" + TB_TMAP + "&format=jsonp",
+
+                success: function(data) {
+
+
+
+                    $("#agenome").html("");
+
+
+                    var items = "";
+
+                    var item0 = "";
+
+                    jQuery.each(data.objects,
+
+                        function(i, element) {
+
+                            if (element.short_name == referenceID) {
+
+                                item0 = "<option value='" + element.reference_path + "/" + element.short_name + ".fasta'>" + element.short_name + "</option>";
+
+                            } else {
+
+                                items += "<option value='" + element.reference_path + "/" + element.short_name + ".fasta'>" + element.short_name + "</option>";
+
+                            }
+
+
+
+                        });
+
+
+
+                    $("#agenome").html("<option>None</option>" + item0 + items);
+
+                    
+                },
+
+                type: "GET",
+
+                dataType: "jsonp"
+
+
+
+            });
+
+        });
+
+
+
+
+
+        $(function() {
+
+
+
+            $.fn.serializeObject = function() {
+
+                var o = {};
+
+                var a = this.serializeArray();
+
+                $.each(a,
+
+                    function() {
+
+                        if (o[this.name] != null) {
+
+                            if (!o[this.name].push) {
+
+                                o[this.name] = [o[this.name]];
+
+                            }
+
+                            o[this.name].push(this.value || '');
+
+                        } else {
+
+                            o[this.name] = this.value || '';
+
+                        }
+
+                    });
+
+                return o;
+
+            };
+
+
+
+            function getSpadesOptions() {
+
+                var result = '';
+
+                if ($('#spadesOptions').val() != 'custom') {
+
+                    result = $('#spadesOptions').val();
+
+                } else {
+
+                    result = "-k " + $('#spadesK').val() + " " + $('#spadesMode').val();
+
+                }
+
+
+
+                if (!($('#runIonHammer').attr('checked'))) {
+
+                    result += ' --only-assembler';
+
+                }
+
+                return result;
+
+            }
+
+
+
+            $(function() {
+
+
+
+                $('#postbutton').click(function() {
+
+                    obj = $('#pluginconfig').serializeObject();
+
+
+
+                    obj['spadesOptions'] = getSpadesOptions();
+
+                    pluginAPIJSON = {
+
+                        "plugin": [TB_plugin.fields.name],
+
+                        "pluginconfig": obj
+
+                    };
+
+                    pluginAPIJSON = JSON.stringify(pluginAPIJSON);
+
+
+
+                    pluginURL = "/rundb/api/v1/results/" + TB_result + "/plugin/";
+
+
+
+                    $.ajax({
+
+                        type: 'POST',
+
+                        url: pluginURL,
+
+                        contentType: "application/json; charset=utf-8",
+
+                        data: pluginAPIJSON,
+
+                        dataType: "json",
+
+                        success: function() {
+
+                            parent.$.fn.colorbox.close();
+
+                        }
+
+                    });
+
+                });
+
+            })
+
+        });
+
+
+
+        $(function() {
+
+            $('#spadesOptions').change(function() {
+
+                if ($(this).val() == 'custom') {
+
+                    $("#customSpadesOptions").show('slow');
+
+                } else {
+
+                    $("#customSpadesOptions").hide('slow');
+
+                }
+
+            });
+
+        });
+
+    </script>
+
+    <script type='text/javascript'>
+
+        $(function() {
+
+            $("#postbutton").button();
+
+            $("#postbutton").css("margin", 20);
+
+        });
+
+    </script>
+
+
+
+    <script type='text/javascript'>
+
+        function selectrun() {
+
+            var myselect = document.getElementById('runselect')
+
+            for (var i = 0; i < myselect.options.length; i++) {
+
+                if (myselect.options[i].selected) {
+
+                    document.getElementById(myselect.options[i].value).style.display = "";
+
+                } else {
+
+                    document.getElementById(myselect.options[i].value).style.display = "none"
+
+                }
+
+            }
+
+        }
+
+    </script>
+
+
+
+</head>
+<!--build the html page for what the user sees-->
+<body>
+
+    <center>
+        <input id="postbutton" type="submit" value="Submit the Plugin"></input>
+    </center>
+	
+	<div style="text-align:center">
+    <h2>Torrent Meta16S Plugin</h2>
+    </div>
+	
+	<br>
+
+    <form id="pluginconfig">
+
+        <div id="adv_parent">
+
+ <!--           <h3 id="adv" align=right>Advanced Settings:&nbsp &nbsp &nbsp &nbsp<a href="javascript:;" class="expandCollapseButton" title="Collapse Section"></a></h3>-->
+
+
+            <div>
+
+                <fieldset id=advanced_settings>
+
+                    <center>
+
+                        <table align="center">
+
+                            <tr>
+
+                                <td align=right># Analysis reads: <input type=hidden name="bgenome" id="bgenome" value="None"></td>
+
+                                <td align=left>
+
+                                    <select name="num_of_reads" id="num_of_reads">
+
+                                        <option value="10000">10,000</option>
+
+                                        <option value="20000">20,000</option>
+
+                                        <option value="30000">30,000</option>
+
+										<option value="40000">40,000</option>
+										
+                                        <option value="50000" selected="selected">50,000</option>
+
+                                        </option>
+
+                                    </select>
+
+                                </td>
+
+                            </tr>														
+                            <tr>
+							
+								<td align=right>Forward primer:</td>
+
+                                <td ><input name="primer_f" id="primer_f" value=""></td>
+								
+							</tr>
+
+                            <tr>							
+								
+								<td align=right>Reverse primer:</td>
+
+                                <td ><input name="primer_r" id="primer_r" value=""></td>
+
+                            </tr>
+
+                            <tr>
+
+                                <td align=right>Reference database:</td>
+
+                                <td align=left>
+
+                                    <select name="database" id="database">
+
+                                        <option value="2015RDP" selected="selected">2015RDP</option>
+					<option value="Greengene">Greengene</option>
+
+                                    </select>
+
+                                </td>
+
+                            </tr>
+
+                        </table>
+
+                    </center>
+
+                    <input type=hidden checked=checked name=runSpades value=1>
+
+                    <center>
+
+                        <table align="center">
+
+						<tr>
+								<td align=center></td>
+								<h3>Advanced settings</h3>
+						</tr>
+							<tr class="zebra">
+								<td>
+									<span class="help"
+										title="qaverage">
+										Minimum average quality score:
+									</span>
+								</td>
+								<td ><input type="textbox" name="qaverage" id="qaverage" value="20"></td>
+								<td> <em> <font color="blue">Remove those sequences that have an average quality score below the value</font> </em> </td>
+							</tr>
+							
+							<tr class="zebra">
+								<td>
+									<span class="help"
+										title="maxambig">
+										Maximum ambiguous bases:
+									</span>
+								</td>
+								<td ><input type="textbox" name="maxambig" id="maxambig" value="0"></td>
+								<td> <em> <font color="blue">Cull those sequences that have ambiguous bases</font> </em> </td>
+							</tr>
+							
+							<tr class="zebra">
+								<td>
+									<span class="help"
+										title="maxhomop">
+										Maximum homopolymer length:
+									</span>
+								</td>
+								<td ><input type="textbox" name="maxhomop" id="maxhomop" value="10"></td>
+								<td> <em> <font color="blue">Cap the homopolymer length</font> </em> </td>
+							</tr>
+							
+							<tr class="zebra">
+								<td>
+									<span class="help"
+										title="minlength">
+										Minimum read length:
+									</span>
+								</td>
+								<td ><input type="textbox" name="minlength" id="minlength" value="200"></td>
+								<td> <em> <font color="blue">Trim the sequence according to their length</font> </em> </td>
+							</tr>
+							
+							<tr class="zebra">
+								<td>
+									<span class="help"
+										title="pdiffs">
+										Maximum differences to primer:
+									</span>
+								</td>
+								<td ><input type="textbox" name="pdiffs" id="pdiffs" value="2"></td>
+								<td> <em> <font color="blue">Maximum number of differences to the primer sequence</font> </em> </td>
+							</tr>
+                        </table>
+
+                    </center>
+
+                </fieldset>
+
+            </div>
+
+        </div>
+            <h4>About Torrent Meta16S plugin</h4>
+            <p>This plugin uses mothur for 16S metagenomics data analysis based on fusion primers for amplifying.</p>
+            <p>Get more information by visiting <a href="https://www.mothur.org/" target="_blank">Mothur</a>.</p>		
+        </div>
+    </form>
+
+
+
+<!--    <script>
+
+        $('.expandCollapseButton').toggle(function() {
+
+            if ($(this).attr('title') == 'Collapse Section') {
+
+                $(this).css('background-position', 'right top');
+
+                $(this).attr('title', 'Expand Section');
+
+            } else {
+
+                $(this).css('background-position', 'left top');
+
+                $(this).attr('title', 'Collapse Section');
+
+            }
+
+        }, function() {
+
+            if ($(this).attr('title') == 'Expand Section') {
+
+                $(this).css('background-position', 'left top');
+
+                $(this).attr('title', 'Collapse Section');
+
+            } else {
+
+                $(this).css('background-position', 'right top');
+
+                $(this).attr('title', 'Expand Section');
+
+            }
+
+        });
+
+
+
+        $('.expandCollapseButton').click(function(event) {
+
+            $(event.target).parent().parent().toggleClass('small');
+
+            $(event.target).parent().next().slideToggle();
+
+        });
+
+
+
+        $('#adv .expandCollapseButton').css('background-position', 'right top');
+
+        $('#adv .expandCollapseButton').attr('title', 'Expand Section');
+
+        $('#adv').parent().toggleClass('small');
+
+        $('#adv').next().toggle();
+
+    </script> -->
+
+
+
+    <div id="json_result"></div>
+
+
+
+</body>
+
+
+
+</html>
+
+
+
