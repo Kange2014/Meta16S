@@ -72,8 +72,10 @@ IMPORTANT: if taxonomic information at any level is missing, the semicolons are 
 	  e.g.Bacteria;Proteobacteria;Gammaproteobacteria;Enterobacteriales;Enterobacteriaceae;Klebsiella;")
 } else { 
 
-# Delete the taxonomy row from the OTU-table
-otuFile <- otu_table[,c(1:dim(otu_table)[2] - 1)]
+# Delete the taxonomy column from the OTU-table
+#otuFile <- otu_table[,c(1:dim(otu_table)[2] - 1)]  ## this will generate a numeric vector when otu_table only has 2 columns (one analyzed sample)
+otuFile <- otu_table
+otuFile[,dim(otu_table)[2]] <- NULL  ## this ensures a data.frame variable for downstream analysis
 
 # Initialize empty dataframe
 taxonomy_new <- NULL
@@ -89,27 +91,80 @@ row.names(taxonomy_new) <- row.names(otuFile)
 # record the length of taxonomy classes 
 taxonomy_len <- length(taxonomy_new[1,])
 
-# Add level information to all taxonomies
+# Add level information to all taxonomies when reference database is RDP which contains 6 tax levels
 if (taxonomy_len == 6){
 
 	# For taxonomies related to kingdom level
 	taxonomy_new[,1] <- sub("^","k__",taxonomy_new[,1])
 
-	# For taxonomies related to phylum level
-	taxonomy_new[,2] <- sub("^","p__",taxonomy_new[,2])
+	for (i in 1:length(taxonomy_new[,1])) {
 
-	# For taxonomies related to class level
-	taxonomy_new[,3] <- sub("^","c__",taxonomy_new[,3])
+		# Save the position where the first string matches "unclassified"
+		value <- grep("unclassified",taxonomy_new[i,])[1]
+  
+		if(is.na(value)){
+			# For taxonomies related to phylum level
+			taxonomy_new[i,2] <- sub("^","p__",taxonomy_new[i,2])
 
-	# For taxonomies related to order level
-	taxonomy_new[,4] <- sub("^","o__",taxonomy_new[,4])
+			# For taxonomies related to class level
+			taxonomy_new[i,3] <- sub("^","c__",taxonomy_new[i,3])
 
-	# For taxonomies related to family level
-	taxonomy_new[,5] <- sub("^","f__",taxonomy_new[,5])
+			# For taxonomies related to order level
+			taxonomy_new[i,4] <- sub("^","o__",taxonomy_new[i,4])
 
-	# For taxonomies related to genus level
-	taxonomy_new[,6] <- sub("^","g__",taxonomy_new[,6])
+			# For taxonomies related to family level
+			taxonomy_new[i,5] <- sub("^","f__",taxonomy_new[i,5])
+
+			# For taxonomies related to genus level
+			taxonomy_new[i,6] <- sub("^","g__",taxonomy_new[i,6])
+		}
+  
+		else{
+			if (value == 2) {
+				taxonomy_new[i,2:6] <- sub("^","k__",taxonomy_new[i,2:6])
+			}
+  
+			if (value == 3) {
+				# For taxonomies related to phylum level
+				taxonomy_new[i,2:6] <- sub("^","p__",taxonomy_new[i,2:6])
+			}
+			
+			if (value == 4) {
+				# For taxonomies related to phylum level
+				taxonomy_new[i,2] <- sub("^","p__",taxonomy_new[i,2])
+	
+				# For taxonomies related to class level
+				taxonomy_new[i,3:6] <- sub("^","c__",taxonomy_new[i,3:6])
+			}
+  
+			if (value == 5) {
+				# For taxonomies related to phylum level
+				taxonomy_new[i,2] <- sub("^","p__",taxonomy_new[i,2])
+	
+				# For taxonomies related to class level
+				taxonomy_new[i,3] <- sub("^","c__",taxonomy_new[i,3])
+	
+				# For taxonomies related to order level
+				taxonomy_new[i,4:6] <- sub("^","o__",taxonomy_new[i,4:6])
+			}
+  
+			if (value == 6) {
+				# For taxonomies related to phylum level
+				taxonomy_new[i,2] <- sub("^","p__",taxonomy_new[i,2])
+	
+				# For taxonomies related to class level
+				taxonomy_new[i,3] <- sub("^","c__",taxonomy_new[i,3])
+	
+				# For taxonomies related to order level
+				taxonomy_new[i,4] <- sub("^","o__",taxonomy_new[i,4])
+	
+				# For taxonomies related to family level
+				taxonomy_new[i,5:6] <- sub("^","f__",taxonomy_new[i,5:6])
+			}
+		}
+	}
 }
+
 #################################################################################
 
 # Create list with taxonomic information for each taxonomy level
@@ -186,11 +241,11 @@ kingdom <- (t(kingdom))
 
 ##Phylum table
 # Create table with taxonomic information (phylum level)
-phyla <-matrix(unlist(sample_list[[2]]),nrow = dim(otuFile)[2],ncol = list_length[2],dimnames = list(names(otuFile),unlist(class_list[[2]])))
+phyla <- matrix(unlist(sample_list[[2]]),nrow = dim(otuFile)[2],ncol = list_length[2],dimnames = list(names(otuFile),unlist(class_list[[2]])))
 phyla <- (t(phyla))
 
 # Order table according to taxonomic name (descending)
-phyla <- phyla[order(row.names(phyla)),]
+phyla <- phyla[order(row.names(phyla)),,drop=F] # drop=F to ensure a single column data.frame
 
 ## Class table
 # Create table with taxonomic information (class level)
@@ -198,7 +253,7 @@ classes <- matrix(unlist(sample_list[[3]]), nrow = dim(otuFile)[2], ncol = list_
 classes <- (t(classes))
 
 # Order dataframe according to taxonomic name (descending)
-classes <- classes[order(row.names(classes)),]
+classes <- classes[order(row.names(classes)),,drop=F]
 
 ## Orders
 # create table with taxonomic information (Order)
@@ -206,7 +261,7 @@ orders <-matrix(unlist(sample_list[[4]]),nrow = dim(otuFile)[2],ncol = list_leng
 orders <- (t(orders))
 
 # Order dataframe according to taxonomic name (descending)
-orders <- orders[order(row.names(orders)),]
+orders <- orders[order(row.names(orders)),,drop=F]
 
 ## Family table
 # Create table with taxonomic information (family level)
@@ -214,7 +269,7 @@ families <-matrix(unlist(sample_list[[5]]),nrow = dim(otuFile)[2],ncol = list_le
 families <- (t(families))
 
 # Order dataframe according to taxonomic name (descending)
-families <- families[order(row.names(families)),]
+families <- families[order(row.names(families)),,drop=F]
 
 ## Genus level
 # Create table with taxonomic information (generum level)
@@ -222,7 +277,7 @@ genera <- matrix(unlist(sample_list[[6]]),nrow = dim(otuFile)[2],ncol = list_len
 genera <- (t(genera))
 
 # Order dataframe according to taxonomic name (descending)
-genera <- genera[order(row.names(genera)),]
+genera <- genera[order(row.names(genera)),,drop=F]
 
 
 ## Species level
@@ -231,7 +286,7 @@ if(taxonomy_len == 7) {
 	species <- matrix(unlist(sample_list[[7]]),nrow = dim(otuFile)[2],ncol = list_length[7],dimnames = list(names(otuFile),unlist(class_list[[7]])))
 	species <- (t(species))
 	# Order dataframe according to taxonomic name (descending)
-	species <- species[order(row.names(species)),]
+	species <- species[order(row.names(species)),,drop=F]
 }
 
 # Merge all dataframes

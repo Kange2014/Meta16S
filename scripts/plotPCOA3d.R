@@ -531,6 +531,8 @@ plotPCOA3d         <- function(axes,loading,design=FALSE,ax1=1, ax2=2, ax3=3, La
   data           <- read.table(axes,header = T)
   names          <- data[,1]
   axis           <- data[,-1]
+  if (ncol(axis) < 3) { return("No three axes!") }
+  
   axi            <- axis[,c(ax1,ax2,ax3)]
   colnames(axi) <- c("axis1","axis2","axis3")
   

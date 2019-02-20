@@ -22,58 +22,6 @@
 
  <script>
   $(function() {
-
-    $.fn.serializeObject = function() {
-     var o = {};
-     var a = this.serializeArray();
-     $.each( a, function() {
-       if( o[this.name] != null ) {
-         if( !o[this.name].push ) {
-           o[this.name] = [o[this.name]];
-         }
-         o[this.name].push(this.value || '');
-       } else {
-         o[this.name] = this.value || '';
-       }
-      });
-      return o;
-    };
-
-    var reportUrl = '/rundb/api/v1/results/'+TB_result+'/?format=json&noplugin=True';
-    var pluginUrl = '/rundb/api/v1/plugin/'+TB_plugin.pk+'/?format=json';
-    var analysisUrl;
-    $.ajaxSetup({async: false});
-    $.get( reportUrl, function(data) {
-      analysisUrl = data.reportLink;
-    });
-    // get config.html defaults from API - not sure this is still valid with new plan?
-    $.get( reportUrl, function(data) {
-      $.each( data.config, function(key,val) {
-        try { $("#"+key).val(val); }
-        catch(e) {}
-      });
-    });
-
-    // get plan libtype
-    var reportUrl = '/rundb/api/v1/results/'+TB_result+'/?format=json&noplugin=True';
-    var easUrl;
-    var analysisUrl;
-    $.ajaxSetup({async: false});
-    $.get( reportUrl, function(data) {
-     analysisUrl = data.reportLink;
-     easUrl = data.eas;
-     experimentUrl = data.experiment;
-     referenceID = data.reference;
-    });
-    var planLibType = "";
-    if( experimentUrl != undefined && experimentUrl != null && experimentUrl != "" ) {
-      var planUrl;
-      $.get( experimentUrl+"?format=json", function(data) { planUrl = data.plan; } );
-      if( planUrl != undefined && planUrl != null && planUrl != "" ) {
-        $.get( planUrl+"?format=json", function(data) { planLibType = data.runType; });
-      }
-    }
-
 	$('#show_advanced').click(function() {
       var state = $(this).text();
       if( state == "Show advanced options" ) {
@@ -101,35 +49,15 @@
       $("#primer_diff").toggle(showchecks[4]=='Y');
       $("#min_reads").toggle(showchecks[5]=='Y');
     }
-	
-	$(function()
-    {
-    $('#postbutton').click(function() {
-      obj = $('#pluginconfig').serializeObject();
-	  obj.barcodetable = parent.TB_plugin_functions.get_plugin_barcodetable();
-      pluginAPIJSON = { "plugin" : [TB_plugin.fields.name], "pluginconfig" : obj };
-      pluginAPIJSON = JSON.stringify(pluginAPIJSON);
-      pluginURL = "/rundb/api/v1/results/" + TB_result + "/plugin/";
-      $.ajax({
-        type: 'POST',
-        url: pluginURL,
-        async: false,
-        contentType: "application/json; charset=utf-8",
-        success: function(data) {
-          $("#json_result").html('<div style="text-align: center;"><img src="/site_media/jquery/colorbox/images/loading.gif" alt="Running Plugin" style="float:center"></img><p>Running the Plugin... Check the Plugin Summary</p></div>');
-          setTimeout("parent.$.fn.colorbox.close()",2000);
-        },
-        data: pluginAPIJSON,
-        dataType: "json"
-      });
-    });
-    });
+  
+	// populate settings avaialble to the current Run Plan application type
+    setOptionDefaults();
+  
+  });
+ </script>  
  
-   });
- </script>
 </head>
 
-<!--build the html page for what the user sees-->
 <body>
  <form id="pluginconfig" name="pluginconfig">
    <div align="center" id="json_result">
@@ -167,14 +95,13 @@
       <tr>
         <td><span class="help" title="The database used for classification">Reference database:</span></td>
          <td align=left>
-         <select name="database" id="database">
+		 <select name="database" id="database">
             <option value="Greengenes" selected="selected">Greengenes</option>
 		    <option value="2015RDP">2015RDP</option>
          </select>
-        </td>
+		 </td>
       </tr>
     </table>
-   
    
     <table align="center">
 	  <tr>
@@ -218,7 +145,7 @@
 	  </tr>
 	
     </table>
-	
+	 
 	<div>
      <h4>About Torrent Meta16S plugin</h4>
      <p>This plugin uses mothur for 16S metagenomics data analysis based on fusion primers for amplifying.</p>
@@ -227,4 +154,6 @@
 
  </form>
 </body>
+
 </html>
+

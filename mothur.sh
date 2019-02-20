@@ -40,7 +40,7 @@ ${BIN}/mothur "#pre.cluster(fasta=all.unique.good.filter.unique.fasta,name=all.u
 
 # Output File Names:
 # all.unique.good.filter.unique.precluster.denovo.uchime.chimeras
-# all.unique.good.filter.unique.precluster.denovo.uchime.accn
+# all.unique.good.filter.unique.precluster.denovo.uchime.accnos
 ${BIN}/mothur "#chimera.uchime(fasta=all.unique.good.filter.unique.precluster.fasta,
 							name=all.unique.good.filter.unique.precluster.names,
 							group=all.good.group,
@@ -50,11 +50,18 @@ ${BIN}/mothur "#chimera.uchime(fasta=all.unique.good.filter.unique.precluster.fa
 # all.unique.good.filter.unique.precluster.pick.names
 # all.unique.good.filter.unique.precluster.pick.fasta
 # all.good.pick.group
-${BIN}/mothur "#remove.seqs(accnos=all.unique.good.filter.unique.precluster.denovo.uchime.accnos,
+
+if [[ ! -s "all.unique.good.filter.unique.precluster.denovo.uchime.accnos" ]]; then
+	mv all.unique.good.filter.unique.precluster.fasta all.unique.good.filter.unique.precluster.pick.fasta
+	mv all.unique.good.filter.unique.precluster.names all.unique.good.filter.unique.precluster.pick.names
+	mv all.good.group all.good.pick.group
+else
+	${BIN}/mothur "#remove.seqs(accnos=all.unique.good.filter.unique.precluster.denovo.uchime.accnos,
 							fasta=all.unique.good.filter.unique.precluster.fasta,
 							name=all.unique.good.filter.unique.precluster.names,
 							group=all.good.group)"
 
+fi
 # classify your sequences using the Bayesian classifier based configured database
 #
 # We will also specific a cutoff of 80. This roughly means that we are 80%+ confident
@@ -191,6 +198,20 @@ ${BIN}/mothur "#summary.single(shared=all.unique.good.filter.unique.precluster.p
 #
 # Generate a phylip-formatted distance matrix that describes the dissimilarity (1-similarity) among multiple group
 # output: all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.braycurtis.0.03.lt.dist
+
+# if only one sample is analyzed
+# we first add the barcode name to these files,
+# then, ignore followed beta diversity analysis since it researches inter-samples relationships
+sample_num=`cut -f 2 all.group | uniq | wc -l`
+sample_name=`cut -f 2 all.group | uniq`
+if [ ${sample_num} == 1 ]; then
+	sed -i '2s/0.03\t/0.03\t'${sample_name}'/' all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.groups.summary
+	sed -i '1s/-/'${sample_name}'/g' all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.groups.rarefaction
+	sed -i '1s/-/'${sample_name}'/g' all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.groups.r_shannon
+	sed -i '1s/-/'${sample_name}'/g' all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.groups.r_chao
+	exit 0
+fi
+
 ${BIN}/mothur "#dist.shared(shared=all.unique.good.filter.unique.precluster.pick.pick.opti_mcc.shared,
 							calc=braycurtis)"
 
